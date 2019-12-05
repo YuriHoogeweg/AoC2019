@@ -1,25 +1,37 @@
 input_file = open('input.txt', 'r')
 program_array = [int(instruction) for instruction in input_file.read().split(",")]
 
-def get_parameter_value(program, first_instruction, instruction_pointer, param_number):
-    instruction_str = str(first_instruction)    
+def get_immediate_value(program, pointer):
+    return program[pointer]
+
+def get_position_value(program, pointer):
+    return program[program[pointer]] 
+
+def get_mode(instruction, param_num):
+    if param_num == 3:
+        return 1
+
+    instruction_str = str(instruction)    
     modes = [int(mode) for mode in instruction_str[:len(instruction_str) - 2]]
     modes.reverse()
-    mode = modes[param_number - 1] if param_number - 1 < len(modes) else 0
+    
+    if param_num - 1 >= len(modes):
+        return 0
+    
+    return modes[param_num -1]    
 
-    initial_param_value = int(program[instruction_pointer + param_number])
+def get_parameter_value(program, first_instruction, instruction_pointer, param_num):
+    mode = get_mode(first_instruction, param_num)
+    param_pointer = instruction_pointer + param_num
 
-    if mode == 0:
-        return int(program[initial_param_value])
-    if mode == 1: 
-        return initial_param_value
+    return get_position_value(program, param_pointer) if mode == 0 else get_immediate_value(program, param_pointer)
 
 def run_program(program, input):
     instruction_pointer = 0
 
     while instruction_pointer < len(program): 
         first_instruction = program[instruction_pointer]
-        opcode = first_instruction % 100                        
+        opcode = first_instruction % 100
         
         if opcode == 1:
             program[program[instruction_pointer + 3]] = get_parameter_value(program, first_instruction, instruction_pointer, 1) + get_parameter_value(program, first_instruction, instruction_pointer, 2)
@@ -31,7 +43,9 @@ def run_program(program, input):
             program[program[instruction_pointer + 1]] = input
             instruction_pointer += 2            
         if opcode == 4:
-            print(get_parameter_value(program, first_instruction, instruction_pointer, 1))
+            val = get_parameter_value(program, first_instruction, instruction_pointer, 1)
+            if val != 0:
+                return val          
             instruction_pointer += 2
         if opcode == 5:
             instruction_pointer = get_parameter_value(program, first_instruction, instruction_pointer, 2) if get_parameter_value(program, first_instruction, instruction_pointer, 1) != 0 else instruction_pointer + 3
@@ -43,6 +57,11 @@ def run_program(program, input):
         if opcode == 8:
             program[program[instruction_pointer + 3]] = 1 if get_parameter_value(program, first_instruction, instruction_pointer, 1) == get_parameter_value(program, first_instruction, instruction_pointer, 2) else 0
             instruction_pointer += 4
+        if opcode == 99:
+            return
 
 # Part 1
-print(run_program(program_array.copy(), 5))
+print('Part 1: ' + str(run_program(program_array.copy(), 1)))
+
+# Part 2
+print('Part 2: ' + str(run_program(program_array.copy(), 5)))
